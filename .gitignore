@@ -1,0 +1,5 @@
+/.hie
+/.stack-work
+/tests/*/*.actual
+/*.cabal
+/stack.yaml.lock

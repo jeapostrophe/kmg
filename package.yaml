@@ -1,0 +1,63 @@
+name: kmg
+version: 0.1
+github: "jeapostrophe/kmg"
+license: Apache-2.0
+
+dependencies:
+  - base >= 4.7 && < 5
+  - containers
+  - mtl
+
+default-extensions:
+- BangPatterns
+- DeriveAnyClass
+- DeriveDataTypeable
+- DeriveGeneric
+- DerivingStrategies
+- EmptyDataDeriving
+- FlexibleContexts
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- LambdaCase
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
+- NumericUnderscores
+- OverloadedStrings
+- PartialTypeSignatures
+- RankNTypes
+- RecordWildCards
+- ScopedTypeVariables
+- StrictData
+- TemplateHaskell
+- TypeApplications
+- TypeSynonymInstances
+
+ghc-options:
+- -Wall
+- -Werror
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+- -Wmissing-export-lists
+- -Wpartial-fields
+- -Wwarn=unused-top-binds
+- -Wmonomorphism-restriction
+- -O2
+- -fwrite-ide-info
+- -hiedir=.hie
+
+library:
+  source-dirs: src
+
+executables:
+  kmgc:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - kmg
