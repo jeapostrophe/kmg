@@ -7,7 +7,12 @@ for i in tests/c/*.kmg ; do
   OK=$?
   if ! (cmp ${i}.actual ${i}.$OK >/dev/null 2>&1) ; then
     echo ${i} failed:
-    diff -u ${i}.actual ${i}.$OK
+    if [ -f ${i}.$OK ] ; then
+      diff -u ${i}.actual ${i}.$OK
+    else
+      echo "-> no ${i}.$OK, actual follows:"
+      cat ${i}.actual
+    fi
     FAIL=$((FAIL + 1))
   fi
 done
