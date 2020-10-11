@@ -1,2 +1,24 @@
 #lang kmg
 
+; d is for data-type
+d Expr :
+  Num <= Int
+  Add <= Expr x Expr
+  Mul <= Expr x Expr
+
+; v is for value
+v eval :: Expr -> Int :
+  ; I'm imagining that cases takes a set of tagged continuations
+  ; Is that the "dual" way?
+  cases :
+    ; ! makes a continuation from a value, in this case a lambda?
+    Num <= ! \ n . n
+    Add <= ! \ l r . (eval l) + (eval r)
+    Mul <= ! \ l r . (eval l) * (eval r)
+
+v pp : Expr -> String :
+  cases :
+    Num <= ! \ n . i2s n
+    ; {} is for making a text object, where @ escapes
+    Add <= ! \ l r . {@(pp l) + @(pp r)}
+    Mul <= ! \ l r . {@(pp l) * @(pp r)}
