@@ -1,4 +1,5 @@
 #lang kmg
+
 ; d is for data-type
 d Expr :
   Num <= Int
@@ -15,9 +16,13 @@ v eval :: Expr -> Int :
     Add <= ! \ l r . (eval l) + (eval r)
     Mul <= ! \ l r . (eval l) * (eval r)
 
-v pp : Expr -> String :
+
+v pp :: Expr -> String :
   cases :
     Num <= ! \ n . i2s n
     ; {} is for making a text object, where @ escapes
     Add <= ! \ l r . {@(pp l) + @(pp r)}
     Mul <= ! \ l r . {@(pp l) * @(pp r)}
+
+
+

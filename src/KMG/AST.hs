@@ -3,16 +3,23 @@ module KMG.AST where
 
 import Data.Text (Text)
 
-data SrcOrigin
-  = SOFile FilePath
-  deriving (Eq, Ord, Show)
-
 data SrcLoc
   = SrcLoc FilePath Int Int
   deriving (Eq, Show)
 
+data KTFollow
+  = KTFNone SrcLoc
+  | KTFEscape SrcLoc KUnit KText
+  deriving (Eq, Show)
+
+data KText
+  = KTExtent SrcLoc Text KTFollow
+  deriving (Eq, Show)
+
 data KUnit
   = KUVar SrcLoc Text
+  | KUGroup SrcLoc [KUnit]
+  | KUText SrcLoc KText
   deriving (Eq, Show)
 
 data KLFollow

@@ -45,19 +45,62 @@ pl_comment = dlabel "line comment" $ do
 pt :: Parser Char -> Parser Char -> Parser Text
 pt start middle = T.pack <$> ((:) <$> start <*> many middle)
 
+varStartChar :: Parser Char
+varStartChar = letterChar
+
+varRestChar :: Parser Char
+varRestChar = alphaNumChar
+
+-- XXX switch to satisfy
+opChar :: Parser Char
+opChar = oneOf ("!@#$%^&*-_=+|\\<>/?.:;"::String)
+
 pt_var :: Parser Text
-pt_var = pt letterChar alphaNumChar
+pt_var = pt varStartChar varRestChar
 
 pt_op :: Parser Text
-pt_op = pt symbolChar symbolChar
+pt_op = notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar
 
 pu_var :: Parser KUnit
 pu_var = dlabel "variable" $ do
-  KUVar <$> srcloc <*> (pt_var <|> pt_op) <* space
+  KUVar <$> srcloc <*> (pt_var <|> pt_op)
+
+pu_group :: Parser KUnit
+pu_group = dlabel "group" $ do
+  KUGroup <$> srcloc <*> between (char '(') (char ')') (some punit)
+
+ptf_none :: Parser KTFollow
+ptf_none = do
+  void $ chunk "}"
+  KTFNone <$> srcloc
+
+ptf_escape :: Parser KTFollow
+ptf_escape = dlabel "text escape" $ do
+  void $ chunk "@"
+  KTFEscape <$> srcloc <*> punit <*> ptext
+
+ptfollow :: Parser KTFollow
+ptfollow = dlabel "text follower" $ do
+  ptf_none <|> ptf_escape
+
+ptext :: Parser KText
+ptext = dlabel "text" $ do
+  KTExtent <$> srcloc <*> (T.pack <$> many (satisfy (\x -> x /= '@' && x /= '\n' && x /= '}'))) <*> ptfollow
+
+pu_text :: Parser KUnit
+pu_text = dlabel "text unit" $ do
+  KUText <$> srcloc <*> ((char '{') *> ptext)
+
+pufollow :: Parser ()
+pufollow = dlabel "unit follower" $ void $ do
+  chunk " "
+  <|> lookAhead (chunk "\n")
+  <|> lookAhead (chunk ")")
+  <|> lookAhead (chunk "}")
 
 punit :: Parser KUnit
 punit = dlabel "unit" $ do
-  pu_var
+  (pu_var <|> pu_group <|> pu_text) <* pufollow
 
 plf_none :: Parser KLFollow
 plf_none = do
@@ -85,7 +128,7 @@ pline = dlabel "line" $ checkIndent $
 
 ppara :: Parser KPara
 ppara = dlabel "paragraph" $
-  KPara <$> srcloc <*> some pline
+  KPara <$> srcloc <*> some pline <* newline
 
 pdoc :: Parser KDoc
 pdoc = dlabel "document" $
@@ -93,7 +136,7 @@ pdoc = dlabel "document" $
 
 pfile :: Parser KDoc
 pfile = dlabel "file" $ do
-  void $ chunk "#lang kmg\n"
+  void $ chunk "#lang kmg\n\n"
   pdoc <* eof
 
 parseFile :: FilePath -> IO KDoc
