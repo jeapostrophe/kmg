@@ -3,11 +3,12 @@ module KMG.Compiler (compiler) where
 import System.Environment
 import System.Exit
 import KMG.Parser
+import Text.Pretty.Simple (pPrint)
 
 compileFile :: String -> IO ()
 compileFile f = do
   ast <- parseFile f
-  putStrLn $ show ast
+  pPrint ast
   putStrLn $ "XXX"
 
 compiler :: IO ()

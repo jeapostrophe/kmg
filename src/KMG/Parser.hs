@@ -29,8 +29,10 @@ checkIndent m = do
 
 type Parser = ParsecT Void Text (ReaderT Env IO)
 
-dlabel :: Show a => String -> Parser a -> Parser a
-dlabel lab m = dbg lab $ label lab $ m
+dlabel :: forall a . Show a => String -> Parser a -> Parser a
+dlabel lab m = mdbg $ label lab $ m
+  where mdbg :: Parser a -> Parser a
+        mdbg = if False then dbg lab else id
 
 srcloc :: Parser SrcLoc
 srcloc = do

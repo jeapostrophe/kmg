@@ -9,6 +9,7 @@ dependencies:
   - mtl
   - text
   - megaparsec
+  - pretty-simple
 
 default-extensions:
 - BangPatterns
