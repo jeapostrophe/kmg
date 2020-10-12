@@ -9,6 +9,7 @@ import qualified Data.Text.IO as TIO
 import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Text.Megaparsec.Debug
 import KMG.AST
 
 data Env = Env
@@ -20,13 +21,16 @@ addIndent m = do
   local (\env -> env { env_ilvl = 1 + env_ilvl }) $
     m
 
-checkIndent :: Parser ()
-checkIndent = do
+checkIndent :: Parser a -> Parser a
+checkIndent m = do
   Env {..} <- ask
   void $ count (2*env_ilvl) (single ' ')
-  return ()
+  m
 
 type Parser = ParsecT Void Text (ReaderT Env IO)
+
+dlabel :: Show a => String -> Parser a -> Parser a
+dlabel lab m = dbg lab $ label lab $ m
 
 srcloc :: Parser SrcLoc
 srcloc = do
@@ -34,7 +38,7 @@ srcloc = do
   return $ SrcLoc sourceName (unPos sourceLine) (unPos sourceColumn)
 
 pl_comment :: Parser KLine
-pl_comment = label "line comment" $ do
+pl_comment = dlabel "line comment" $ do
   void $ chunk ";"
   KLComment <$> srcloc <*> takeWhileP (Just "not nl") (/= '\n') <* newline
 
@@ -48,47 +52,47 @@ pt_op :: Parser Text
 pt_op = pt symbolChar symbolChar
 
 pu_var :: Parser KUnit
-pu_var = label "variable" $ do
+pu_var = dlabel "variable" $ do
   KUVar <$> srcloc <*> (pt_var <|> pt_op) <* space
 
 punit :: Parser KUnit
-punit = label "unit" $ do
+punit = dlabel "unit" $ do
   pu_var
 
 plf_none :: Parser KLFollow
 plf_none = do
-  void $ newline
+  void $ chunk "\n"
   KLFNone <$> srcloc
 
 plf_colon :: Parser KLFollow
 plf_colon = do
-  void $ chunk ":"
+  void $ chunk ":\n"
   KLFColon <$> srcloc <*> addIndent pdoc
 
 plfollow :: Parser KLFollow
-plfollow = label "line follower" $ do
+plfollow = dlabel "line follower" $ do
   plf_none
   <|> plf_colon
 
 pl_units :: Parser KLine
-pl_units = label "units" $ do
-  KLUnits <$> srcloc <*> many punit <*> plfollow
+pl_units = dlabel "units" $ do
+  KLUnits <$> srcloc <*> some punit <*> plfollow
 
 pline :: Parser KLine
-pline = label "line" $ checkIndent *>
+pline = dlabel "line" $ checkIndent $
   pl_comment
   <|> pl_units
 
 ppara :: Parser KPara
-ppara = label "paragraph" $
-  KPara <$> srcloc <*> many pline <* newline
+ppara = dlabel "paragraph" $
+  KPara <$> srcloc <*> some pline
 
 pdoc :: Parser KDoc
-pdoc = label "document" $ 
-  KDoc <$> srcloc <*> many ppara <* newline
+pdoc = dlabel "document" $
+  KDoc <$> srcloc <*> some ppara
 
 pfile :: Parser KDoc
-pfile = do
+pfile = dlabel "file" $ do
   void $ chunk "#lang kmg\n"
   pdoc <* eof
 
