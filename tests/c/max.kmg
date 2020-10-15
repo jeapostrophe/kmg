@@ -1,0 +1,44 @@
+#lang kmg
+
+; a `for/max` comprehension over reals can use -inf.0 as the initial
+; accumulator value since it's the unit of max.
+; but
+; 1. sometimes you use it and then explicitly check whether it was
+;    -inf.0 so the -inf.0 is communicating that the sequence was empty
+;    and you need it there in case it isn't so that max doesn't blow up.
+; 2. maybe I want it generic in max. I could pass max's unit (if it
+;    has one) with max, but I still will check for it on the consumer side
+;    to see whether the sequence was empty.
+; I like the idea of returning a + unit in the SLC so that I can just
+; give two continuations, which is notationally very cheap with
+; continuation-centric function definitions.
+
+; value-oriented functions give names to values that you can refer to inside
+; non-locally whereas continuation-oriented (CO) functions do the same for
+; continuations.
+; thus, if you don't use a CO function in your code, you can't easily jump.
+
+; but this example doesn't use non-local continuations.
+; the only advantage this implementation has (arguably)
+; over aSLC is the transparent discrimination of the sums
+; and subsequent dispatch.
+
+; sequence-observe : sequence a -> a × sequence a + unit
+; for/max : (a × a -> a) × sequence a -> a + unit
+(define for/max
+  (⇒ (pair max xs)
+     (↑ (⇐ (pair a u₀)
+           ; if the initial sequence is not empty, we get our first accumulator
+           ; and the rest of the sequence
+           (pair (↓ a (fix f (⇒ (pair acc xs)
+                                (↑ (⇐ a
+                                      ; you can factor out the (↓ a ...) but I kept it
+                                      ; this way to make it "clearer"
+                                      (pair (↓ a (⇒ (pair x xs)
+                                                    (↑ f (pair (↑ max (pair acc x)) xs))))
+                                            (↓ a (⇒ () acc))))
+                                   (↑ sequence-observe xs)))))
+                 ; if the initial sequence was empty, use the fail
+                 ; continuation
+                 u₀))
+        (↑ sequence-observe xs))))
