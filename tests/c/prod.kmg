@@ -62,11 +62,11 @@
 (define prod
   (⇐ a
      (↓ a (fix f (⇐ b
-                    (cocase (↓ b (⇒ (Nil) 1))
-                            (↓ b (⇒ (Cons x xs)
-                                    (↑ (⇐ c
-                                          (cocase (↓ a (⇒ (True) 0))
-                                                  (↓ c (⇒ (False) (↑ * (pair x (↑ f xs)))))))
-                                       (↑ zero? x))))))))))
+                    (cocase [Nil  (↓ b (⇒ () 1))]
+                            [Cons (↓ b (⇒ (pair x xs)
+                                          (↑ (⇐ c
+                                                (cocase [True  (↓ a (⇒ () 0))] 
+                                                        [False (↓ c (⇒ () (↑ * (pair x (↑ f xs)))))] ))
+                                             (↑ zero? x))))]))))))
 
 ; cocase takes a continuation for each variant
