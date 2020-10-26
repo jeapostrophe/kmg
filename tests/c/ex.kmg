@@ -1,0 +1,10 @@
+#lang kmg
+
+; if cond then true else false
+
+; (true else false) * cond
+
+; mac vcases s [ c ... ] :
+;  (cases c ...) * s
+
+; vcases exists but we don't want people to use it
