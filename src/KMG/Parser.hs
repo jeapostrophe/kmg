@@ -32,7 +32,7 @@ type Parser = ParsecT Void Text (ReaderT Env IO)
 dlabel :: forall a . Show a => String -> Parser a -> Parser a
 dlabel lab m = mdbg $ label lab $ m
   where mdbg :: Parser a -> Parser a
-        mdbg = if False then dbg lab else id
+        mdbg = if True then dbg lab else id
 
 srcloc :: Parser SrcLoc
 srcloc = do
@@ -53,23 +53,26 @@ varStartChar = letterChar
 varRestChar :: Parser Char
 varRestChar = alphaNumChar
 
--- XXX switch to satisfy
 opChar :: Parser Char
 opChar = oneOf ("!@#$%^&*-_=+|\\<>/?.:;"::String)
 
-pt_var :: Parser Text
-pt_var = pt varStartChar varRestChar
-
-pt_op :: Parser Text
-pt_op = notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar
+pu_op :: Parser KUnit
+pu_op = dlabel "operator" $ do
+  KUOp <$> srcloc <*> (notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar)
 
 pu_var :: Parser KUnit
 pu_var = dlabel "variable" $ do
-  KUVar <$> srcloc <*> (pt_var <|> pt_op)
+  KUVar <$> srcloc <*> pt varStartChar varRestChar
+
+pu_group_type :: Parser (KGroupType, Char, Char)
+pu_group_type =
+  (return $ (KG_Paren, '(', ')')) <|>
+  (return $ (KG_Bracket, '[', ']'))
 
 pu_group :: Parser KUnit
 pu_group = dlabel "group" $ do
-  KUGroup <$> srcloc <*> between (char '(') (char ')') (some punit)
+  (kgt, gs, ge) <- pu_group_type
+  KUGroup <$> srcloc <*> pure kgt <*> between (char gs) (char ge) (some punit)
 
 ptf_none :: Parser KTFollow
 ptf_none = do
@@ -87,7 +90,7 @@ ptfollow = dlabel "text follower" $ do
 
 ptext :: Parser KText
 ptext = dlabel "text" $ do
-  KTExtent <$> srcloc <*> (T.pack <$> many (satisfy (\x -> x /= '@' && x /= '\n' && x /= '}'))) <*> ptfollow
+  KTExtent <$> srcloc <*> (T.pack <$> many (noneOf ("@\n}" :: String))) <*> ptfollow
 
 pu_text :: Parser KUnit
 pu_text = dlabel "text unit" $ do
@@ -102,7 +105,7 @@ pufollow = dlabel "unit follower" $ void $ do
 
 punit :: Parser KUnit
 punit = dlabel "unit" $ do
-  (pu_var <|> pu_group <|> pu_text) <* pufollow
+  (pu_var <|> pu_op <|> pu_group <|> pu_text) <* pufollow
 
 plf_none :: Parser KLFollow
 plf_none = do
@@ -111,8 +114,9 @@ plf_none = do
 
 plf_colon :: Parser KLFollow
 plf_colon = do
-  void $ chunk ":\n"
-  KLFColon <$> srcloc <*> addIndent pdoc
+  void $ chunk ":"
+  void $ lookAhead $ chunk "\n"
+  KLFColon <$> srcloc <*> addIndent ppara
 
 plfollow :: Parser KLFollow
 plfollow = dlabel "line follower" $ do
@@ -129,16 +133,17 @@ pline = dlabel "line" $ checkIndent $
   <|> pl_units
 
 ppara :: Parser KPara
-ppara = dlabel "paragraph" $
-  KPara <$> srcloc <*> some pline <* newline
+ppara = dlabel "paragraph" $ do
+  void $ chunk "\n"
+  KPara <$> srcloc <*> some pline
 
 pdoc :: Parser KDoc
 pdoc = dlabel "document" $
-  KDoc <$> srcloc <*> some ppara
+  KDoc <$> srcloc <*> many ppara
 
 pfile :: Parser KDoc
 pfile = dlabel "file" $ do
-  void $ chunk "#lang kmg\n\n"
+  void $ chunk "#lang kmg\n"
   pdoc <* eof
 
 parseFile :: FilePath -> IO KDoc

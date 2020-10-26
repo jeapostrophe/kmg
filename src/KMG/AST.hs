@@ -16,15 +16,21 @@ data KText
   = KTExtent SrcLoc Text KTFollow
   deriving (Eq, Show)
 
+data KGroupType
+  = KG_Paren
+  | KG_Bracket
+  deriving (Eq, Show)
+
 data KUnit
   = KUVar SrcLoc Text
-  | KUGroup SrcLoc [KUnit]
+  | KUOp SrcLoc Text
+  | KUGroup SrcLoc KGroupType [KUnit]
   | KUText SrcLoc KText
   deriving (Eq, Show)
 
 data KLFollow
   = KLFNone SrcLoc
-  | KLFColon SrcLoc KDoc
+  | KLFColon SrcLoc KPara
   deriving (Eq, Show)
 
 data KLine
