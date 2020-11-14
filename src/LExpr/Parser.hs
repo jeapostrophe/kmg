@@ -1,4 +1,4 @@
-module KMG.Parser (parseFile) where
+module LExpr.Parser (parseFile) where
 
 import Control.Monad
 import Control.Monad.Reader
@@ -9,7 +9,7 @@ import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Debug
-import KMG.AST
+import LExpr.AST
 
 debug :: Bool
 debug = False
@@ -41,10 +41,10 @@ srcloc = do
   SourcePos {..} <- getSourcePos
   return $ SrcLoc sourceName (unPos sourceLine) (unPos sourceColumn)
 
-pl_comment :: Parser KLine
+pl_comment :: Parser LLine
 pl_comment = dlabel "line comment" $ do
   void $ chunk ";"
-  KLComment <$> srcloc <*> takeWhileP (Just "not nl") (/= '\n') <* newline
+  LLComment <$> srcloc <*> takeWhileP (Just "not nl") (/= '\n') <* newline
 
 pt :: Parser Char -> Parser Char -> Parser Text
 pt start middle = T.pack <$> ((:) <$> start <*> many middle)
@@ -56,97 +56,97 @@ varRestChar :: Parser Char
 varRestChar = alphaNumChar
 
 opChar :: Parser Char
-opChar = oneOf ("!@#$%^&*-_=+|\\<>/?.:;"::String)
+opChar = oneOf ("`~!@#$%^&*-_=+|\\<>/?,.:;"::String)
 
-pu_op :: Parser KUnit
+pu_op :: Parser LUnit
 pu_op = dlabel "operator" $ do
-  KUOp <$> srcloc <*> (notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar)
+  LUOp <$> srcloc <*> (notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar)
 
-pu_var :: Parser KUnit
+pu_var :: Parser LUnit
 pu_var = dlabel "variable" $ do
-  KUVar <$> srcloc <*> pt varStartChar varRestChar
+  LUVar <$> srcloc <*> pt varStartChar varRestChar
 
-pu_group_type :: Parser (KGroupType, Char, Char)
+pu_group_type :: Parser (LGroupType, Char, Char)
 pu_group_type =
-  (return $ (KG_Paren, '(', ')')) <|>
-  (return $ (KG_Bracket, '[', ']'))
+  (return $ (LG_Paren, '(', ')')) <|>
+  (return $ (LG_Bracket, '[', ']'))
 
-pu_group :: Parser KUnit
+pu_group :: Parser LUnit
 pu_group = dlabel "group" $ do
   (kgt, gs, ge) <- pu_group_type
-  KUGroup <$> srcloc <*> pure kgt <*> between (char gs) (char ge) (some punit)
+  LUGroup <$> srcloc <*> pure kgt <*> between (char gs) (char ge) (some punit)
 
-ptf_none :: Parser KTFollow
+ptf_none :: Parser LTFollow
 ptf_none = do
   void $ chunk "}"
-  KTFNone <$> srcloc
+  LTFNone <$> srcloc
 
-ptf_escape :: Parser KTFollow
+ptf_escape :: Parser LTFollow
 ptf_escape = dlabel "text escape" $ do
   void $ chunk "@"
-  KTFEscape <$> srcloc <*> punit <*> ptext
+  LTFEscape <$> srcloc <*> punit <*> ptext
 
-ptfollow :: Parser KTFollow
+ptfollow :: Parser LTFollow
 ptfollow = dlabel "text follower" $ do
   ptf_none <|> ptf_escape
 
-ptext :: Parser KText
+ptext :: Parser LText
 ptext = dlabel "text" $ do
-  KTExtent <$> srcloc <*> (T.pack <$> many (noneOf ("@\n}" :: String))) <*> ptfollow
+  LTExtent <$> srcloc <*> (T.pack <$> many (noneOf ("@\n}" :: String))) <*> ptfollow
 
-pu_text :: Parser KUnit
+pu_text :: Parser LUnit
 pu_text = dlabel "text unit" $ do
-  KUText <$> srcloc <*> ((char '{') *> ptext)
+  LUText <$> srcloc <*> ((char '{') *> ptext)
 
 pufollow :: Parser ()
 pufollow = dlabel "unit follower" $ do
   void $ chunk " "
   <|> lookAhead (void $ oneOf ("\n)]}" :: String))
 
-punit :: Parser KUnit
+punit :: Parser LUnit
 punit = dlabel "unit" $ do
   (pu_var <|> pu_op <|> pu_group <|> pu_text) <* pufollow
 
-plf_none :: Parser KLFollow
+plf_none :: Parser LLFollow
 plf_none = do
   void $ chunk "\n"
-  KLFNone <$> srcloc
+  LLFNone <$> srcloc
 
-plf_colon :: Parser KLFollow
+plf_colon :: Parser LLFollow
 plf_colon = do
   void $ chunk ":"
   void $ lookAhead $ chunk "\n"
-  KLFColon <$> srcloc <*> addIndent ppara
+  LLFColon <$> srcloc <*> addIndent ppara
 
-plfollow :: Parser KLFollow
+plfollow :: Parser LLFollow
 plfollow = dlabel "line follower" $ do
   plf_none
   <|> plf_colon
 
-pl_units :: Parser KLine
+pl_units :: Parser LLine
 pl_units = dlabel "units" $ do
-  KLUnits <$> srcloc <*> some punit <*> plfollow
+  LLUnits <$> srcloc <*> some punit <*> plfollow
 
-pline :: Parser KLine
+pline :: Parser LLine
 pline = dlabel "line" $ checkIndent $
   pl_comment
   <|> pl_units
 
-ppara :: Parser KPara
+ppara :: Parser LPara
 ppara = dlabel "paragraph" $ do
   void $ chunk "\n"
-  KPara <$> srcloc <*> some pline
+  LPara <$> srcloc <*> some pline
 
-pdoc :: Parser KDoc
+pdoc :: Parser LDoc
 pdoc = dlabel "document" $
-  KDoc <$> srcloc <*> many ppara
+  LDoc <$> srcloc <*> many ppara
 
-pfile :: Parser KDoc
+pfile :: Parser LDoc
 pfile = dlabel "file" $ do
   void $ chunk "#lang kmg\n"
   pdoc <* eof
 
-parseFile :: FilePath -> IO KDoc
+parseFile :: FilePath -> IO LDoc
 parseFile f = do
   t <- TIO.readFile f
   let env_ilvl = 0 :: Int

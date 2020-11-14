@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-module KMG.AST where
+module LExpr.AST where
 
 import Data.Text (Text)
 
@@ -7,43 +7,44 @@ data SrcLoc
   = SrcLoc FilePath Int Int
   deriving (Eq, Show)
 
-data KTFollow
-  = KTFNone SrcLoc
-  | KTFEscape SrcLoc KUnit KText
+data LTFollow
+  = LTFNone SrcLoc
+  | LTFEscape SrcLoc LUnit LText
   deriving (Eq, Show)
 
-data KText
-  = KTExtent SrcLoc Text KTFollow
+data LText
+  = LTExtent SrcLoc Text LTFollow
   deriving (Eq, Show)
 
-data KGroupType
-  = KG_Paren
-  | KG_Bracket
+data LGroupType
+  = LG_Paren
+  | LG_Bracket
   deriving (Eq, Show)
 
-data KUnit
-  = KUVar SrcLoc Text
-  | KUOp SrcLoc Text
-  | KUGroup SrcLoc KGroupType [KUnit]
-  | KUText SrcLoc KText
+data LUnit
+  = LUVar SrcLoc Text
+  | LUOp SrcLoc Text
+  | LUGroup SrcLoc LGroupType [LUnit]
+  | LUText SrcLoc LText
   deriving (Eq, Show)
 
-data KLFollow
-  = KLFNone SrcLoc
-  | KLFColon SrcLoc KPara
+data LLFollow
+  = LLFNone SrcLoc
+  | LLFColon SrcLoc LPara
+  | LLFComment SrcLoc Text
   deriving (Eq, Show)
 
-data KLine
-  = KLComment SrcLoc Text
-  | KLUnits SrcLoc [KUnit] KLFollow
+data LLine
+  = LLComment SrcLoc Text
+  | LLUnits SrcLoc [LUnit] LLFollow
   deriving (Eq, Show)
 
-data KPara
-  = KPara SrcLoc [KLine]
+data LPara
+  = LPara SrcLoc [LLine]
   deriving (Eq, Show)
 
-data KDoc
-  = KDoc SrcLoc [KPara]
+data LDoc
+  = LDoc SrcLoc [LPara]
   deriving (Eq, Show)
 
 -- I want to do something like Lexprs

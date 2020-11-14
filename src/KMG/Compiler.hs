@@ -1,14 +1,16 @@
 module KMG.Compiler (compiler) where
 
+import qualified Data.Text.IO as TIO
+import LExpr.Parser
+import LExpr.AsSexpr
 import System.Environment
 import System.Exit
-import KMG.Parser
-import Text.Pretty.Simple (pPrint)
+-- import Text.Pretty.Simple (pPrint)
 
 compileFile :: String -> IO ()
 compileFile f = do
   ast <- parseFile f
-  pPrint ast
+  TIO.putStr $ asSexpr ast
   putStrLn $ "XXX"
 
 compiler :: IO ()

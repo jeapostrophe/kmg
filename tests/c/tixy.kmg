@@ -1,0 +1,31 @@
+#lang kmg
+
+; Input:
+; - t --- The time in seconds
+; - i --- The index of the cell
+; - x --- The column
+; - y --- The row
+; Output:
+; - Sign --- Red or white
+; - Value --- % of standard radius
+f tixy t i x y :
+  sin(x / 2) - sin(x - t) - y + 6
+
+v f = box 0
+
+f tick :
+  v t = f / 60
+  for x = 0 to 16 :
+    for y = 0 to 16 :
+      v i = (y * 8) + x
+      v r = box $ tixy t i x y
+      v c = box 12
+      if r < 0 :
+        c <- 2
+        r <- - (ref r)
+      if r > 1 :
+        r <- 1
+      v xp = ((7 + x) * 8) + 4
+      v yp = ((0.5 + y) * 8) + 4
+      v rx = (ref r) * 3.5
+      circ xp yp rx c
