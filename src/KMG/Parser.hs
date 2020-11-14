@@ -2,7 +2,6 @@ module KMG.Parser (parseFile) where
 
 import Control.Monad
 import Control.Monad.Reader
---import Control.Applicative hiding (some, many)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -11,6 +10,9 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Debug
 import KMG.AST
+
+debug :: Bool
+debug = False
 
 data Env = Env
   { env_ilvl :: Int }
@@ -32,7 +34,7 @@ type Parser = ParsecT Void Text (ReaderT Env IO)
 dlabel :: forall a . Show a => String -> Parser a -> Parser a
 dlabel lab m = mdbg $ label lab $ m
   where mdbg :: Parser a -> Parser a
-        mdbg = if True then dbg lab else id
+        mdbg = if debug then dbg lab else id
 
 srcloc :: Parser SrcLoc
 srcloc = do
@@ -97,11 +99,9 @@ pu_text = dlabel "text unit" $ do
   KUText <$> srcloc <*> ((char '{') *> ptext)
 
 pufollow :: Parser ()
-pufollow = dlabel "unit follower" $ void $ do
-  chunk " "
-  <|> lookAhead (chunk "\n")
-  <|> lookAhead (chunk ")")
-  <|> lookAhead (chunk "}")
+pufollow = dlabel "unit follower" $ do
+  void $ chunk " "
+  <|> lookAhead (void $ oneOf ("\n)]}" :: String))
 
 punit :: Parser KUnit
 punit = dlabel "unit" $ do
