@@ -24,6 +24,7 @@ data LGroupType
 data LUnit
   = LUVar SrcLoc Text
   | LUOp SrcLoc Text
+  | LUNum SrcLoc Text
   | LUGroup SrcLoc LGroupType [LUnit]
   | LUText SrcLoc LText
   deriving (Eq, Show)

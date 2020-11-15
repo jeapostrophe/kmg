@@ -24,6 +24,7 @@ instance AsSexpr LUnit where
   asSexpr = \case
     LUVar _ t -> t
     LUOp _ t -> t
+    LUNum _ t -> t
     LUGroup _ g us -> "(" <> asSexpr g <> " " <> T.unwords (map asSexpr us) <> ")"
     LUText _ t -> asSexpr t
 

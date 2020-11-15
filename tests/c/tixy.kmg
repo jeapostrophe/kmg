@@ -9,7 +9,7 @@
 ; - Sign --- Red or white
 ; - Value --- % of standard radius
 f tixy t i x y :
-  sin(x / 2) - sin(x - t) - y + 6
+  (sin (x / 2)) - (sin (x - t)) - y + 6
 
 v f = box 0
 

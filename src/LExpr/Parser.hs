@@ -49,12 +49,6 @@ pl_comment = dlabel "line comment" $ do
 pt :: Parser Char -> Parser Char -> Parser Text
 pt start middle = T.pack <$> ((:) <$> start <*> many middle)
 
-varStartChar :: Parser Char
-varStartChar = letterChar
-
-varRestChar :: Parser Char
-varRestChar = alphaNumChar
-
 opChar :: Parser Char
 opChar = oneOf ("`~!@#$%^&*-_=+|\\<>/?,.:;"::String)
 
@@ -62,9 +56,22 @@ pu_op :: Parser LUnit
 pu_op = dlabel "operator" $ do
   LUOp <$> srcloc <*> (notFollowedBy (chunk ":" *> pufollow) *> pt opChar opChar)
 
+varStartChar :: Parser Char
+varStartChar = letterChar
+
+varRestChar :: Parser Char
+varRestChar = alphaNumChar
+
 pu_var :: Parser LUnit
 pu_var = dlabel "variable" $ do
   LUVar <$> srcloc <*> pt varStartChar varRestChar
+
+numChar :: Parser Char
+numChar = oneOf ("0123456789" :: String)
+
+pu_num :: Parser LUnit
+pu_num = dlabel "number" $ do
+  LUNum <$> srcloc <*> pt numChar numChar
 
 pu_group_type :: Parser (LGroupType, Char, Char)
 pu_group_type =
@@ -105,7 +112,7 @@ pufollow = dlabel "unit follower" $ do
 
 punit :: Parser LUnit
 punit = dlabel "unit" $ do
-  (pu_var <|> pu_op <|> pu_group <|> pu_text) <* pufollow
+  (pu_num <|> pu_var <|> pu_op <|> pu_group <|> pu_text) <* pufollow
 
 plf_none :: Parser LLFollow
 plf_none = do
